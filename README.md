@@ -5,7 +5,7 @@ This is a pytorch implementation with a model for ncRNA-drug resistance associat
 
 "DMGAT: Predicting ncRNA-Drug resistance associations based on diffusion map and heterogeneous graph attention network"
 
-![Alt text](fig/ncRNA_flowchart.tiff?raw=true "DMGAT pipeline")
+![Alt text](fig/ncRNA_flowchart.png?raw=true "DMGAT pipeline")
 
 
 # Getting Started
