@@ -12,22 +12,6 @@ lnc_emb_2d = feat_2d['lnc_emb_2d']
 mi_emb_2d = feat_2d['mi_emb_2d']
 drug_emb_2d = feat_2d['drug_emb_2d']
 
-# length_phi = 15   #length of swiss roll in angular direction
-# length_Z = 15     #length of swiss roll in z direction
-# sigma = 0.1       #noise strength
-# m = 10000         #number of samples
-#
-# # create dataset
-# phi = length_phi*np.random.rand(m)
-# xi = np.random.rand(m)
-# Z = length_Z*np.random.rand(m)
-# X = 1./6*(phi + sigma*xi)*np.sin(phi)
-# Y = 1./6*(phi + sigma*xi)*np.cos(phi)
-#
-# swiss_roll = np.array([X, Y, Z]).transpose()
-#
-# # check that we have the right shape
-# print(swiss_roll.shape)
 neighbor_params = {'n_jobs': -1, 'algorithm': 'ball_tree'}
 
 lnc_dmap0 = dm.DiffusionMap.from_sklearn(n_evecs=int(len(lnc_emb_2d)/3), epsilon='bgh', alpha=1.0, neighbor_params=neighbor_params)

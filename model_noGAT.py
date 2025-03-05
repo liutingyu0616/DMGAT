@@ -7,10 +7,8 @@ import torch.nn.functional as F
 class Linear(nn.Module):
     def __init__(self, lnc_emb, mi_emb, drug_emb, out_size):
         super().__init__()
-        self.circ_emb = nn.Parameter(torch.randn(2, out_size))
         self.linear_lnc = nn.Linear(lnc_emb.shape[-1], out_size)
         self.linear_mi = nn.Linear(mi_emb.shape[-1], out_size)
-        self.pi_emb = nn.Parameter(torch.randn(1, out_size))
         self.linear_drug = nn.Linear(drug_emb.shape[-1], out_size)
         # self.rnd_r = torch.rand(625, out_size).to('cuda')-0.5
         # self.rnd_d = torch.rand(121, out_size).to('cuda')-0.5
@@ -19,7 +17,7 @@ class Linear(nn.Module):
         new_lnc_emb = self.linear_lnc(lnc_emb)
         new_mi_emb = self.linear_mi(mi_emb)
         drug_emb = self.linear_drug(drug_emb)
-        rna_emb = torch.concat([self.circ_emb, new_lnc_emb, new_mi_emb, self.pi_emb], dim=0)
+        rna_emb = torch.concat([new_lnc_emb, new_mi_emb], dim=0)
         return rna_emb, drug_emb
 
 class GCN(nn.Module):
@@ -40,7 +38,7 @@ class GCN(nn.Module):
 
         # Create D^{-1/2}
         self.D_neg_sqrt = torch.diag_embed(torch.pow(D_diag, -0.5))
-        self.rnd = 40*(torch.rand(adj.shape[0], out_dim).to('cuda')-0.5)
+        self.rnd = 50*(torch.rand(adj.shape[0], out_dim).to('cuda')-0.5)
 
         # Initialise the weight matrix as a parameter
         self.W = nn.Parameter(torch.rand(in_dim, out_dim))
@@ -54,7 +52,7 @@ class GCN(nn.Module):
 
         # ReLU(D^-1/2 * A_hat * D^-1/2 * X * W)
         H = F.elu(support_2)
-        H = (H + self.rnd)/40
+        H = (H + self.rnd)/50
 
         return H
 
@@ -148,9 +146,6 @@ class GAT(nn.Module):
         return p_feat, d_feat
 
 
-
-
-
 class Predictor(nn.Module):
     def __init__(self, in_dim, hidden_dim):
         super(Predictor, self).__init__()
@@ -160,23 +155,26 @@ class Predictor(nn.Module):
     def forward(self, p_feat, d_feat):
         new_p_feat = self.rna_layer(p_feat)
         new_d_feat = self.drug_layer(d_feat)
-        res = new_p_feat.mm(new_d_feat.t())
-        return F.sigmoid(res)
+        # res = new_p_feat.mm(new_d_feat.t())
+        # return F.sigmoid(res)
+        return new_p_feat, new_d_feat
 
 
 class PUTransGCN(nn.Module):
-    def __init__(self, linear, r_gcn, d_gcn, gat, predictor, **kwargs):
+    def __init__(self, linear, r_gcn_list, d_gcn_list, gat_list, predictor, **kwargs):
     # def __init__(self, linear, gcn, p_encoder, d_encoder, predictor, **kwargs):
         super(PUTransGCN, self).__init__(**kwargs)
         self.linear = linear
-        self.r_gcn = r_gcn
-        self.d_gcn = d_gcn
-        self.gat = gat
+        self.r_gcn_list = r_gcn_list
+        self.d_gcn_list = d_gcn_list
+        self.gat_list = gat_list
         self.predictor = predictor
 
     def forward(self, lnc_emb, mi_emb, drug_emb, rna_sim, drug_sim, adj_full):
-        rna_feat_linear, drug_feat_linear = self.linear(lnc_emb, mi_emb, drug_emb)
-        p_feat_gcn = self.r_gcn(rna_feat_linear, rna_sim)
-        d_feat_gcn = self.d_gcn(drug_feat_linear, drug_sim)
+        rna_feat, drug_feat = self.linear(lnc_emb, mi_emb, drug_emb)
+        for r_gcn in self.r_gcn_list:
+            rna_feat = r_gcn(rna_feat, rna_sim)
+        for d_gcn in self.d_gcn_list:
+            drug_feat = d_gcn(drug_feat, drug_sim)
         # p_feat_gat, d_feat_gat = self.gat(rna_feat_linear, drug_feat_linear, adj_full)
-        return self.predictor(p_feat_gcn, d_feat_gcn)
+        return self.predictor(rna_feat, drug_feat)

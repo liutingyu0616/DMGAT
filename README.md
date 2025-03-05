@@ -7,6 +7,7 @@ This is a PyTorch(an open-source deep learning framework) implementation with a 
 
 ![Alt text](fig/ncRNA_flowchart.png?raw=true "DMGAT pipeline")
 
+The flowchart of DMGAT. (a) ncRNA and drug node embedding and similarity calculation. Split sequence of ncRNA and SMILES of drug into several 3-mers, and then replaced by their corresponding feature vectors derived from word2vec. Flatten the feature to 2D using a deep learning network. Using diffusion map to reduce the dimension of feature. Sequence similarity obtained by calculating the Euclid distance of their feature. (b) Feature extraction using GCN. Contracting two separate homogeneous graph convolution networks to extracting ncRNA and drug feature respectively based on their diffusion map feature and similarity. (c) Predicting resistance association score using graph attention network. Combining feature of ncRNA and drug based on attention mechanism, multiply two feature matrices to get the predicted adjacency matrix.
 
 # Getting Started
 

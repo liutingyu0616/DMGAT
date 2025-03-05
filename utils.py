@@ -133,7 +133,17 @@ class Logger:
 
         self.df = [gen_dict() for i in range(total_fold)]
 
-    def evaluate(self, true, pred, test_idx):
+    def evaluate(self, true, pred, test_idx, pos_test_ij, unlabelled_test_ij):
+        unlabelled_test_ij_fold = torch.split(unlabelled_test_ij, len(pos_test_ij))
+        res = 0
+        for part_un_test_ij in unlabelled_test_ij_fold[:-1]:
+            test_idx = torch.cat((pos_test_ij, part_un_test_ij), 0)
+            res = res + self.sub_eva(true, pred, test_idx)
+        res = res/len(unlabelled_test_ij_fold[:-1])
+        return tuple(np.round(res,6))
+
+    def sub_eva(self, true, pred, test_idx):
+
         labels = true[tuple(list(test_idx.T))].cpu().detach().numpy()
         scores = pred[tuple(list(test_idx.T))].cpu().detach().numpy()
 
@@ -173,12 +183,17 @@ class Logger:
         tn, fp, fn, tp = metrics.confusion_matrix(labels, bi_scores).ravel()
         specificity = tn / (tn + fp)
         acc = (tp + tn) / (tp + fp + fn + tn)
+
+        # threshold = 0.5
+        # predictions = (scores >= threshold).astype(int)
+        # correct = (predictions == labels).sum()
+        # acc = correct / len(labels)
+
         mcc = metrics.matthews_corrcoef(labels, bi_scores)
         # mcc = (tp * tn - fp * fn) / np.sqrt(
         #     (tp + fp) * (tp + fn) * (tn + fp) * (tn + fn)
         # )
-        return tuple(
-            np.round(
+        return np.round(
                 [
                     f1_score,
                     f2_score,
@@ -194,9 +209,9 @@ class Logger:
                 ],
                 6,
             )
-        )
 
-    def update(self, fold, epoch, adj, pred, test_idx, train_loss, test_loss):
+
+    def update(self, fold, epoch, adj, pred, test_idx, train_loss, test_loss,pos_test_ij, unlabelled_test_ij):
         (
             f1_score,
             f2_score,
@@ -209,7 +224,7 @@ class Logger:
             acc,
             specificity,
             mcc,
-        ) = self.evaluate(adj, pred, test_idx)
+        ) = self.evaluate(adj, pred, test_idx,pos_test_ij, unlabelled_test_ij)
         self.df[fold]["epoch"].append(epoch)
         self.df[fold]["f1_score"].append(f1_score)
         self.df[fold]["f2_score"].append(f2_score)

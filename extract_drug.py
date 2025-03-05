@@ -23,10 +23,10 @@ for name in adj_drug_name_list:
 df = pd.DataFrame(list(drug_name2id.items()), columns=['name', 'id'])
 df.to_csv('all_drug_id0.csv', index=False)
 
-# all_drug_id = pd.read_csv('all_drug_id.csv')
-# drug_name2id = dict(zip(all_drug_id['name'], all_drug_id['id']))
+all_drug_id = pd.read_csv('all_drug_id.csv')
+drug_name2id = dict(zip(all_drug_id['name'], all_drug_id['id']))
 
-# drug_name2id_value = list(drug_name2id.values())
+drug_name2id_value = list(drug_name2id.values())
 
 import xml.etree.ElementTree as ET
 tree = ET.parse('data/full database.xml')
